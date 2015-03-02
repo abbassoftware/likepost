@@ -1,0 +1,17 @@
+.likepost {
+	border-style: dotted;
+	border-color: #98bf21;
+	padding: 10px;
+}
+
+.total_count {
+	font-weight: bold;
+}
+
+.like-link {
+	 color:red;
+}
+
+.like-link:hover {
+    color: red;
+}
