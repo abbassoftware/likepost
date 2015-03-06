@@ -20,10 +20,11 @@ function likepost_help($path, $arg) {
 * Implements hook_menu().
 */
 function likepost_menu() {
-	$items['likepost/like'] = array(
+	$items['likepost/like/%'] = array(
 		'title' => 'Like',
 		'page callback' => 'likepost_like',
-		'access callback' => TRUE,
+		'page arguments' => array(2),
+		'access arguments' => array('access content'),
 		'type' => MENU_SUGGESTED_ITEM,
 		);
 	return $items;
@@ -35,11 +36,14 @@ function likepost_like($nodeid) {
 	global $user;
 
 	$like = likepost_get_like($nodeid, $user->uid);
-	if ($like != 0) {
+	
+	if ($like !== 0) {
 		db_delete('likepost_table_for_likes')
 		->condition('userid', $user->uid)
 		->condition('nodeid', $nodeid)
 		->execute();
+		//Update the like value , which will be sent as response
+		$like = 0;
 	} else {
 		db_insert('likepost_table_for_likes')
 		->fields(array(
@@ -47,18 +51,16 @@ function likepost_like($nodeid) {
 		'nodeid' => $nodeid
 		))
 		->execute();
+		//Update the like value , which will be sent as response
+		$like = 1;
 	}
-
-
-	$like = likepost_get_like($nodeid, $user->uid);
+	
 	$total_count = likepost_get_total_like($nodeid);
 	drupal_json_output(array(
 		'like_status' => $like,
 		'total_count' => $total_count
 		)
 	);
-	exit();
-
 
 }
 
@@ -68,16 +70,16 @@ function likepost_like($nodeid) {
 function likepost_get_total_like($nid) {
 	$total_count = db_query('SELECT count(*) from {likepost_table_for_likes} where nodeid = :nodeid',
 	array(':nodeid' => $nid))->fetchField();
-	return $total_count;
+	return (int)$total_count;
 }
 
 /**
-* Return the if the current user liked the node.
+* Return whether the current user has liked the node.
 */
 function likepost_get_like($nodeid, $userid) {
 	$like = db_query('SELECT count(*) FROM {likepost_table_for_likes} WHERE
 	nodeid = :nodeid AND userid = :userid', array(':nodeid' => $nodeid, ':userid' => $userid))->fetchField();
-	return $like;
+	return (int)$like;
 }
 
 
@@ -87,6 +89,9 @@ function likepost_get_like($nodeid, $userid) {
 function likepost_node_view($node, $view_mode) {
    if ($view_mode == 'full'){
     	$node->content['likepost_display'] =  array('#markup' => display_like_post_details($node->nid),'#weight' => 100);
+
+    	$node->content['#attached']['js'][] = array('data' => drupal_get_path('module', 'likepost') .'/likepost.js');
+    	$node->content['#attached']['css'][] = array('data' => drupal_get_path('module', 'likepost') .'/likepost.css');
     } 
 
 }
@@ -96,22 +101,43 @@ function likepost_node_view($node, $view_mode) {
 */
 function display_like_post_details($nid) {
 
-	drupal_add_js(drupal_get_path('module', 'likepost') .'/likepost.js');
-	drupal_add_css(drupal_get_path('module', 'likepost') .'/likepost.css');	
 	global $user;
-	global $base_url;
-
 	$totalLike =  likepost_get_total_like($nid);
 	$hasCurrentUserLiked = likepost_get_like($nid , $user->uid);
 
+	return theme('like_post',array('nid' =>$nid, 'totalLike' =>$totalLike, 'hasCurrentUserLiked' => $hasCurrentUserLiked));
 	
+}
+/**
+* Implements hook_theme().
+*/
+function likepost_theme() {
+    $themes = array (
+        'like_post' => array(
+            'arguments' => array('nid','totalLike','hasCurrentUserLiked'),
+        ),
+    );
+    return $themes;
+}
+
+function theme_like_post($arguments) {
+	$nid = $arguments['nid'];
+	$totalLike = $arguments['totalLike'];
+	$hasCurrentUserLiked = $arguments['hasCurrentUserLiked'];
+	global $base_url;
 	$output = '<div class="likepost">';
 	$output .= 'Total number of likes on the post are ';
 	$output .= '<div class="total_count">'.$totalLike.'</div>';
-	$output .= '<a class ="like-link" href = "'.$base_url.'/likepost/like/'.$nid.'" >';
-	if($hasCurrentUserLiked == 0) $output .= 'Like';
-	else $output .= 'Delete Like';
-	$output .= '</a>';
+
+	if($hasCurrentUserLiked == 0) {
+		$linkText = 'Like';
+	} else {
+		$linkText = 'Delete Like';
+	}
+
+	$output .= l($linkText, $base_url.'/likepost/like/'.$nid, array('attributes' => array('class' => 'like-link')));
+	
 	$output .= '</div>'; 
 	return $output;
+	
 }

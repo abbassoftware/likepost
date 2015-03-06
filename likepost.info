@@ -1,6 +1,5 @@
 name = likepost
 description = This module allows the user to like posts in Drupal.
 core = 7.x
-files[] = likepost.install
-files[] = lokepost.module
+
 

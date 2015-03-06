@@ -7,21 +7,23 @@ function likepost_schema() {
 	$schema['likepost_table_for_likes'] = array(
 	'description' => t('Add the likes of the user for a post.'),
 	'fields' => array(
-		'userid' => array(
-		'type' => 'int',
-		'not null' => TRUE,
-		'default' => 0,
-		'description' => t('The user id.'),
-		),
-		'nodeid' => array(
-		'type' => 'int',
-		'unsigned' => TRUE,
-		'not null' => TRUE,
-		'default' => 0,
-		'description' => t('The node id of the node.'),
-		),
+					'userid' => array(
+						'type' => 'int',
+						'not null' => TRUE,
+						'default' => 0,
+						'description' => t('The user id.'),
+					),
+					
+					'nodeid' => array(
+						'type' => 'int',
+						'unsigned' => TRUE,
+						'not null' => TRUE,
+						'default' => 0,
+						'description' => t('The node id of the node.'),
+					),
 		
 	),
+
 	'primary key' => array('userid', 'nodeid'),
 	);
 	return $schema;
